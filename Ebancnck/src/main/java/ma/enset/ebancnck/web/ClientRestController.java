@@ -4,8 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.enset.ebancnck.Dtos.ClientDTO;
 import ma.enset.ebancnck.Entite.Client;
+import ma.enset.ebancnck.Exception.ClientNotFoundExeption;
 import ma.enset.ebancnck.service.Banckaccountservice;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -20,4 +22,10 @@ public class ClientRestController {
         return banckaccountservice.listClients();
 
     }
+
+@GetMapping("/clients/{id}")
+public ClientDTO getClient(@PathVariable(name = "id") Long idClient) throws ClientNotFoundExeption {
+    return  banckaccountservice.getClient(idClient);
+}
+
 }

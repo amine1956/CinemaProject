@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Banckaccountservice {
+    ClientDTO getClient(long idClient) throws ClientNotFoundExeption;
     Client saveClient(Client client);
     CurrentAccount savaCurrentBanckacount(double innistialBlanc, double overDraft, Long clientId) throws ClientNotFoundExeption;
     SavinAccount savaSvingBanckacount(double innistialBlanc, double intersRate, Long clientId) throws ClientNotFoundExeption;

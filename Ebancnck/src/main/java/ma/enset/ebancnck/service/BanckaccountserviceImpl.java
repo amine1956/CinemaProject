@@ -28,10 +28,15 @@ import java.util.stream.Collectors;
 
    private ClientReposetory clientReposetory;
    private BanckAccountReposetory banckAccountReposetory;
-    
+
    private BanckAccountOperationReposetory banckAccountOperationReposetory;
 
    private BanckAccountMappersImpl banckAccountMappers;
+
+    @Override
+    public ClientDTO getClient(long idClient) throws ClientNotFoundExeption {
+        return banckAccountMappers.formCustomer(clientReposetory.findById(idClient).orElseThrow(()->new ClientNotFoundExeption("client not found")));
+    }
 
     @Override
     public Client saveClient(Client client) {
