@@ -3,7 +3,11 @@ package ma.enset.ebancnck;
 import ma.enset.ebancnck.Entite.*;
 import ma.enset.ebancnck.Enums.AccountStatus;
 import ma.enset.ebancnck.Enums.OperationType;
+import ma.enset.ebancnck.Exception.BalanceNotSuffisantExeption;
+import ma.enset.ebancnck.Exception.BanckAccountNotFoundExeption;
+import ma.enset.ebancnck.Exception.ClientNotFoundExeption;
 import ma.enset.ebancnck.Reposetory.*;
+import ma.enset.ebancnck.service.Banckaccountservice;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,19 +24,40 @@ public class EbancnckApplication {
         SpringApplication.run(EbancnckApplication.class, args);
     }
     @Bean
-    CommandLineRunner commandLineRunner(BanckAccountReposetory banckAccountReposetory){
+    CommandLineRunner commandLineRunner(Banckaccountservice banckaccountservice){
         return args->{
-          BanckAccount banckAccount =banckAccountReposetory.findById("6ee33cfb-2597-4eac-a430-7db9a0ca07c8").orElse(null);
-            System.out.println(banckAccount);
-            System.out.println(banckAccount.getClient().getName());
-            System.out.println(banckAccount.getClass().getSimpleName());
-            if(banckAccount instanceof CurrentAccount){
-                System.out.println("Over draft=>"+((CurrentAccount)banckAccount).getOverDraft());
-            }
-            if(banckAccount instanceof SavinAccount){
-                System.out.println("Over draft=>"+((SavinAccount)banckAccount).getInterestRate());
-            }
+            Stream.of("hassane","imane","mohamed").forEach(name ->{
+                Client client=new Client();
+                client.setName(name);
+                client.setEmail(name+"@gmail.com");
+                banckaccountservice.saveClient(client);
+
+            } );
+            banckaccountservice.listClients().forEach(client -> {
+                try {
+                    banckaccountservice.savaCurrentBanckacount(Math.random()*900000,9000,client.getId());
+                    banckaccountservice.savaSvingBanckacount(Math.random()*120000,5.5,client.getId());
+                    banckaccountservice.banckAccountList().forEach(banckAccount -> {
+                        for(int i=0;i<10;i++){
+                            try {
+
+                                banckaccountservice.credit(banckAccount.getId(),10000+Math.random()*120000,"credit");
+                                banckaccountservice.debit(banckAccount.getId(),1000+Math.random()*90000,"debit");
+
+
+                            } catch (BalanceNotSuffisantExeption e) {
+                                e.printStackTrace();
+                            } catch (BanckAccountNotFoundExeption e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                } catch (ClientNotFoundExeption e) {
+                    e.printStackTrace();
+                }
+            });
         };
+
     }
 //@Bean
 CommandLineRunner start(ClientReposetory  clientReposetory ,BanckAccountReposetory banckAccountReposetory,BanckAccountOperationReposetory banckAccountOperationReposetory){
@@ -47,10 +72,10 @@ CommandLineRunner start(ClientReposetory  clientReposetory ,BanckAccountReposeto
 
           CurrentAccount currentAccount=new CurrentAccount();
           currentAccount.setId(UUID.randomUUID().toString());
-          currentAccount.setBalance(9000*Math.random());
+          currentAccount.setBalance(900000*Math.random());
           currentAccount.setCreateAt(new Date());
           currentAccount.setStatus(AccountStatus.ACIVATED);
-          currentAccount.setOverDraft(90000);
+          currentAccount.setOverDraft(9000);
           currentAccount.setClient(client);
           banckAccountReposetory.save(currentAccount);
 
