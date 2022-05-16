@@ -1,6 +1,6 @@
 package ma.enset.ebancnck.service;
 
-import ma.enset.ebancnck.Dtos.ClientDTO;
+import ma.enset.ebancnck.Dtos.*;
 import ma.enset.ebancnck.Entite.BanckAccount;
 import ma.enset.ebancnck.Entite.Client;
 import ma.enset.ebancnck.Entite.CurrentAccount;
@@ -14,14 +14,26 @@ import java.util.Optional;
 
 public interface Banckaccountservice {
     ClientDTO getClient(long idClient) throws ClientNotFoundExeption;
-    Client saveClient(Client client);
-    CurrentAccount savaCurrentBanckacount(double innistialBlanc, double overDraft, Long clientId) throws ClientNotFoundExeption;
-    SavinAccount savaSvingBanckacount(double innistialBlanc, double intersRate, Long clientId) throws ClientNotFoundExeption;
+
+
+    ClientDTO saveClient(ClientDTO client);
+
+    BanckAccountCurrentDTO savaCurrentBanckacount(double innistialBlanc, double overDraft, Long clientId) throws ClientNotFoundExeption;
+    BanckAccountSavingDTO savaSvingBanckacount(double innistialBlanc, double intersRate, Long clientId) throws ClientNotFoundExeption;
     List<ClientDTO> listClients();
-    BanckAccount getBanckAccount(String idAccount) throws BanckAccountNotFoundExeption;
+    BanckAccountDTO getBanckAccount(String idAccount) throws BanckAccountNotFoundExeption;
     void debit(String accountId,double amount,String description) throws BanckAccountNotFoundExeption, BalanceNotSuffisantExeption;
     void credit(String accountId,double amount,String description) throws BalanceNotSuffisantExeption, BanckAccountNotFoundExeption;
     void transfert(String accountId,String accountDestination,Double amount) throws BalanceNotSuffisantExeption, BanckAccountNotFoundExeption;
 
-    List<BanckAccount> banckAccountList();
+    List<BanckAccountDTO> banckAccountList();
+    ClientDTO updatClient(ClientDTO client);
+
+    void deletClient(long idClient);
+
+    List<BanckAccountOperationDTO> historyOperationAccount(String accountId);
+
+    AccountHistoryDTO getAccountHystory(String idAccount, int page, int size) throws BanckAccountNotFoundExeption;
+
+    List<ClientDTO> gestSerchClient(String keyword);
 }

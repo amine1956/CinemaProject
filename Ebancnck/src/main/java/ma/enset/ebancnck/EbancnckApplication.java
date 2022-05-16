@@ -1,5 +1,9 @@
 package ma.enset.ebancnck;
 
+import ma.enset.ebancnck.Dtos.BanckAccountCurrentDTO;
+import ma.enset.ebancnck.Dtos.BanckAccountDTO;
+import ma.enset.ebancnck.Dtos.BanckAccountSavingDTO;
+import ma.enset.ebancnck.Dtos.ClientDTO;
 import ma.enset.ebancnck.Entite.*;
 import ma.enset.ebancnck.Enums.AccountStatus;
 import ma.enset.ebancnck.Enums.OperationType;
@@ -14,6 +18,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -27,7 +32,7 @@ public class EbancnckApplication {
     CommandLineRunner commandLineRunner(Banckaccountservice banckaccountservice){
         return args->{
             Stream.of("hassane","imane","mohamed").forEach(name ->{
-                Client client=new Client();
+                ClientDTO client=new ClientDTO();
                 client.setName(name);
                 client.setEmail(name+"@gmail.com");
                 banckaccountservice.saveClient(client);
@@ -37,28 +42,41 @@ public class EbancnckApplication {
                 try {
                     banckaccountservice.savaCurrentBanckacount(Math.random()*900000,9000,client.getId());
                     banckaccountservice.savaSvingBanckacount(Math.random()*120000,5.5,client.getId());
-                    banckaccountservice.banckAccountList().forEach(banckAccount -> {
-                        for(int i=0;i<10;i++){
-                            try {
-
-                                banckaccountservice.credit(banckAccount.getId(),10000+Math.random()*120000,"credit");
-                                banckaccountservice.debit(banckAccount.getId(),1000+Math.random()*90000,"debit");
 
 
-                            } catch (BalanceNotSuffisantExeption e) {
-                                e.printStackTrace();
-                            } catch (BanckAccountNotFoundExeption e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
                 } catch (ClientNotFoundExeption e) {
                     e.printStackTrace();
                 }
             });
-        };
 
+            List<BanckAccountDTO> list=banckaccountservice.banckAccountList();
+            list.forEach(banckAccount -> {
+                String accountId;
+                        if (banckAccount instanceof BanckAccountSavingDTO) {
+                             accountId= ((BanckAccountSavingDTO) banckAccount).getId();
+
+                        } else {
+                             accountId = ((BanckAccountCurrentDTO) banckAccount).getId();
+
+
+                        }
+                try {
+                    for(int i=0;i<10;i++) {
+                        banckaccountservice.credit(accountId, 10000 + Math.random() * 120000, "credit");
+                        banckaccountservice.debit(accountId, 1000 + Math.random() * 90000, "debit");
+                    }
+                } catch (BalanceNotSuffisantExeption | BanckAccountNotFoundExeption e) {
+                    e.printStackTrace();
+
+                }
+
+
+            });
+        };
     }
+
+
+
 //@Bean
 CommandLineRunner start(ClientReposetory  clientReposetory ,BanckAccountReposetory banckAccountReposetory,BanckAccountOperationReposetory banckAccountOperationReposetory){
   return args->{

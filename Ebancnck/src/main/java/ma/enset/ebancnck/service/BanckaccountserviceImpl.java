@@ -1,8 +1,7 @@
 package ma.enset.ebancnck.service;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.log4j.Log4j;
-import ma.enset.ebancnck.Dtos.ClientDTO;
+import ma.enset.ebancnck.Dtos.*;
 import ma.enset.ebancnck.Entite.*;
 import ma.enset.ebancnck.Enums.OperationType;
 import ma.enset.ebancnck.Exception.BalanceNotSuffisantExeption;
@@ -12,7 +11,8 @@ import ma.enset.ebancnck.Reposetory.BanckAccountOperationReposetory;
 import ma.enset.ebancnck.Reposetory.BanckAccountReposetory;
 import ma.enset.ebancnck.Reposetory.ClientReposetory;
 import ma.enset.ebancnck.mappers.BanckAccountMappersImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,13 +39,14 @@ import java.util.stream.Collectors;
     }
 
     @Override
-    public Client saveClient(Client client) {
-       Client saveClint= clientReposetory.save(client);
-        return saveClint;
+    public ClientDTO saveClient(ClientDTO client) {
+       Client saveClint= banckAccountMappers.formCustomerDTO(client);
+       Client clientsave=clientReposetory.save(saveClint);
+        return banckAccountMappers.formCustomer(clientsave);
     }
 
     @Override
-    public CurrentAccount savaCurrentBanckacount(double innistialBlanc, double overDraft, Long clientId) throws ClientNotFoundExeption {
+    public BanckAccountCurrentDTO savaCurrentBanckacount(double innistialBlanc, double overDraft, Long clientId) throws ClientNotFoundExeption {
         Client client= clientReposetory.findById(clientId).orElse(null);
         if(client==null)
             throw new ClientNotFoundExeption(" Client not found");
@@ -57,11 +58,11 @@ import java.util.stream.Collectors;
         currentAccount.setOverDraft(overDraft);
         currentAccount.setClient(client);
         CurrentAccount savedbanckAcount=banckAccountReposetory.save(currentAccount);
-        return savedbanckAcount;
+        return banckAccountMappers.fromCurrentAccount(savedbanckAcount);
     }
 
     @Override
-    public SavinAccount savaSvingBanckacount(double innistialBlanc, double intersRate, Long clientId) throws ClientNotFoundExeption {
+    public BanckAccountSavingDTO savaSvingBanckacount(double innistialBlanc, double intersRate, Long clientId) throws ClientNotFoundExeption {
         Client client= clientReposetory.findById(clientId).orElse(null);
         if(client==null)
             throw new ClientNotFoundExeption(" Client not found");
@@ -73,7 +74,7 @@ import java.util.stream.Collectors;
         savinAccount.setInterestRate(intersRate);
         savinAccount.setClient(client);
         SavinAccount savedbanckAcount=banckAccountReposetory.save(savinAccount);
-        return savedbanckAcount;
+        return banckAccountMappers.fromSavinAccount(savedbanckAcount);
 
     }
 
@@ -89,14 +90,22 @@ return  collect;
     }
 
     @Override
-    public BanckAccount getBanckAccount(String idAccount) throws BanckAccountNotFoundExeption {
+    public BanckAccountDTO getBanckAccount(String idAccount) throws BanckAccountNotFoundExeption {
         BanckAccount banckAccount= banckAccountReposetory.findById(idAccount).orElseThrow(()->new BanckAccountNotFoundExeption("AcountNotFound"));
-    return  banckAccount;
+         if(banckAccount instanceof SavinAccount){
+             SavinAccount savinAccount= (SavinAccount) banckAccount;
+             return banckAccountMappers.fromSavinAccount(savinAccount);
+         }
+         else {
+             CurrentAccount currentAccount= (CurrentAccount) banckAccount;
+             return banckAccountMappers.fromCurrentAccount(currentAccount);
+         }
+
     }
 
     @Override
     public void debit(String accountId, double amount, String description) throws BanckAccountNotFoundExeption, BalanceNotSuffisantExeption {
-         BanckAccount banckAccount=getBanckAccount(accountId);
+        BanckAccount banckAccount= banckAccountReposetory.findById(accountId).orElseThrow(()->new BanckAccountNotFoundExeption("AcountNotFound"));
          if(banckAccount.getBalance()<amount)
              throw new BalanceNotSuffisantExeption("balance Not suffisant");
          BanckAccountOperation banckAccountOperation=new BanckAccountOperation();
@@ -112,7 +121,7 @@ return  collect;
 
     @Override
     public void credit(String accountId, double amount, String description) throws BanckAccountNotFoundExeption {
-        BanckAccount banckAccount=getBanckAccount(accountId);
+        BanckAccount banckAccount= banckAccountReposetory.findById(accountId).orElseThrow(()->new BanckAccountNotFoundExeption("AcountNotFound"));
 
         BanckAccountOperation banckAccountOperation=new BanckAccountOperation();
         banckAccountOperation.setType(OperationType.CEREDIT);
@@ -132,7 +141,63 @@ return  collect;
 
     }
     @Override
-    public  List<BanckAccount> banckAccountList(){
-        return banckAccountReposetory.findAll();
+    public  List<BanckAccountDTO> banckAccountList() {
+        List<BanckAccount> banckAccountList = banckAccountReposetory.findAll();
+        List<BanckAccountDTO> collect = banckAccountList.stream().map(banckAccount ->
+        {
+            if (banckAccount instanceof SavinAccount) {
+                SavinAccount savinAccount = (SavinAccount) banckAccount;
+                return banckAccountMappers.fromSavinAccount(savinAccount);
+
+            } else {
+                CurrentAccount currentAccount = (CurrentAccount) banckAccount;
+                return banckAccountMappers.fromCurrentAccount(currentAccount);
+            }
+
+        }).collect(Collectors.toList());
+
+        return collect;
+    }
+
+    @Override
+    public ClientDTO updatClient(ClientDTO client) {
+        Client saveClint= banckAccountMappers.formCustomerDTO(client);
+        Client clientsave=clientReposetory.save(saveClint);
+        return banckAccountMappers.formCustomer(clientsave);
+    }
+    @Override
+    public void deletClient(long idClient){
+        clientReposetory.deleteById(idClient);
+    }
+    @Override
+    public List<BanckAccountOperationDTO> historyOperationAccount(String accountId){
+        return  banckAccountOperationReposetory.findByBanckAccountId(accountId).stream().map(banckAccountOperation -> banckAccountMappers.fromBanckAcountOperation(banckAccountOperation)).collect(Collectors.toList());
+
+    }
+
+    @Override
+    public AccountHistoryDTO getAccountHystory(String idAccount, int page, int size) throws BanckAccountNotFoundExeption {
+        BanckAccount banckAccount=banckAccountReposetory.findById(idAccount).orElse(null);
+        if(banckAccount==null) throw new BanckAccountNotFoundExeption("banck not found");
+        Page<BanckAccountOperation> accountOperations = banckAccountOperationReposetory.findByBanckAccountId(idAccount, PageRequest.of(page, size));
+        AccountHistoryDTO accountHistoryDTO=new AccountHistoryDTO();
+         List<BanckAccountOperationDTO> collect = accountOperations.getContent().stream().map(banckAccountOperation -> banckAccountMappers.fromBanckAcountOperation(banckAccountOperation)).collect(Collectors.toList());
+         accountHistoryDTO.setAccountOperationDTOS(collect);
+         accountHistoryDTO.setAccountId(banckAccount.getId());
+         accountHistoryDTO.setBalance(banckAccount.getBalance());
+         accountHistoryDTO.setPageize(size);
+         accountHistoryDTO.setCurrentpage(page);
+         accountHistoryDTO.setTotalepages(accountOperations.getTotalPages());
+
+        return accountHistoryDTO;
+    }
+
+    @Override
+    public List<ClientDTO> gestSerchClient(String keyword) {
+        List<Client> customers=clientReposetory.searchCustomer(keyword);
+        List<ClientDTO> customerDTOS = customers.stream().map(cust -> banckAccountMappers.formCustomer(cust)).collect(Collectors.toList());
+        return customerDTOS;
+
+
     }
 }
