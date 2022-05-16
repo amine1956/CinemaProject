@@ -1,0 +1,53 @@
+<div class="containermt mt-2">
+ <ng-container *ngIf="clients |async as listClient; else failureLoding">
+
+
+
+   <div class="card" *ngIf="clients">
+
+     <div class="card-header">
+       <div class="card-body">
+         <div *ngIf="searchformGroup">
+           <form [formGroup]="searchformGroup" (ngSubmit)="handeleSeaechClient()">
+
+             <div class="input-group">
+               <label class="input-group-text">Keyword</label>
+               <input type="text" formControlName="keyword" class="form-control">
+               <button class="btn btn-info">Search</button>
+
+             </div>
+           </form>
+         </div>
+
+         <table class="table">
+           <thead>
+           <tr>
+             <th>ID</th><th>name</th><th>Email</th>
+           </tr>
+           </thead>
+           <tbody>
+           <tr *ngFor="let c of clients |async">
+             <td>{{c.id}}</td>
+             <td>{{c.name}}</td>
+             <td>{{c.email}}</td>
+           </tr>
+           </tbody>
+         </table>
+       </div>
+
+     </div>
+
+   </div>
+ </ng-container>
+<ng-template #failureLoding >
+  <ng-container *ngIf="errorMessage ; else loading">
+    <div class="text-danger">{{errorMessage}}</div>
+  </ng-container>
+<ng-template #loading>
+  <div class="text-danger">loading.................</div>
+
+</ng-template>
+
+</ng-template>
+
+</div>
